@@ -268,8 +268,7 @@ func compose_trace_columns{
     ood_main_frame: EvaluationFrame,
     ood_aux_frame: EvaluationFrame,
 ) -> felt* {
-    let (result: felt*) = alloc();
-    tempvar result_ptr = result;
+    alloc_locals;
 
     // Main trace coefficient rows
     let n_cols = queried_main_trace_states.n_cols;
@@ -280,11 +279,13 @@ func compose_trace_columns{
     let z_next = composer.z_next;
 
     // Compose columns of the main segment
+    let row = queried_main_trace_states.elements;
+    let (local result: felt*) = alloc();
     // TODO: Don't hardcode the number of query and columns
     tempvar n = 54;
-    let row = queried_main_trace_states.elements;
     tempvar row_ptr = row;
     tempvar x_coord_ptr = composer.x_coordinates;
+    tempvar result_ptr = result;
     loop_main:
         tempvar sum_curr = 0;
         tempvar sum_next = 0;
@@ -405,8 +406,10 @@ func compose_trace_columns{
 
     // Compose columns of the aux segments
     let row = queried_aux_trace_states.elements;
+    tempvar n = 54; // TODO: double-check this value!
     tempvar row_ptr = row;
     tempvar x_coord_ptr = composer.x_coordinates;
+    tempvar result_ptr = result_ptr;
     loop_aux:
         tempvar sum_curr = 0;
         tempvar sum_next = 0;
@@ -485,23 +488,25 @@ func compose_constraint_evaluations{
     queried_evaluations: Table,
     ood_evaluations: Vec,
 ) -> felt* {
+    alloc_locals;
+
     // Compute z^m
     let num_eval_columns = ood_evaluations.n_elements;
     let z = composer.z_curr;
-    let (z_m) = pow(z, num_eval_columns);
-     
-    let (result: felt*) = alloc();
-    tempvar result_ptr = result;
+    let (local z_m) = pow(z, num_eval_columns);
+    local range_check_ptr = range_check_ptr;
 
-    let n_cols = queried_evaluations.n_cols;
-    let cc_constraint = composer.cc.constraints;
-    let cc_trace_next = composer.cc.trace.values + n_cols;
+    local n_cols = queried_evaluations.n_cols;
+    local cc_constraint: felt* = composer.cc.constraints;
+    // let cc_trace_next = composer.cc.trace.values + n_cols;
 
+    local row: felt* = queried_evaluations.elements;
+    let (local result: felt*) = alloc();
     // TODO: Don't hardcode number of queries
     tempvar n = 54;
-    let row = queried_evaluations.elements;
-    tempvar row_ptr = row;
+    tempvar row_ptr = row;      // TODO: Why?
     tempvar x_coord_ptr = composer.x_coordinates;
+    tempvar result_ptr = result;
     loop:
         tempvar sum = 0;
         
@@ -621,18 +626,18 @@ func combine_compositions(
     t_composition: felt*,
     c_composition: felt*
 ) -> felt* {
-
-    let (result: felt*) = alloc();
-    tempvar result_ptr = result;
+    alloc_locals;
 
     tempvar cc_degree_0 = composer.cc.degree[0];
     tempvar cc_degree_1 = composer.cc.degree[1];
     
+    let (local result: felt*) = alloc();
     // TODO: Don't hardcode number of queries
     tempvar n = 54;
     tempvar t_ptr = t_composition;
     tempvar c_ptr = c_composition;
     tempvar x_coord_ptr = composer.x_coordinates;
+    tempvar result_ptr = result;
     loop:
         tempvar x = [x_coord_ptr];
         tempvar t = [t_ptr];
