@@ -309,6 +309,12 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
 
     let ood_constraint_evaluations = channel.read_ood_constraint_evaluations();
 
+    let deep_coefficients_coin = public_coin.to_cairo_memory();
+    let deep_coefficients = air
+        .get_deep_composition_coefficients::<Felt, Blake2s_256<Felt>>(&mut public_coin)
+        .map_err(|_| VerifierError::RandomCoinError)?;
+
+
     // Evaluation data
     let mut data = HashMap::new();
     data.insert(
@@ -369,6 +375,22 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
         t_evaluations2
             .iter()
             .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string()),
+    );
+    data.insert(
+        "deep_coefficients",
+        deep_coefficients.to_cairo_memory(),
+    );
+    data.insert(
+        "deep_coefficients_coin",
+        deep_coefficients_coin,
+    );
+    data.insert(
+        "deep_coefficients_trace_len",
+        deep_coefficients.trace.len().to_string() 
+    );
+    data.insert(
+        "deep_coefficients_constraints_len",
+        deep_coefficients.constraints.len().to_string()
     );
     data.insert("z", z.to_raw().to_string());
     Ok(data)
