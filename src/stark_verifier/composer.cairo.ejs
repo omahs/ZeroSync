@@ -60,8 +60,6 @@ func compose_trace_columns{
 
     // Main trace coefficient rows
     let n_cols = queried_main_trace_states.n_cols;
-    let cc_trace_curr = composer.cc.trace.values;
-    let cc_trace_next = composer.cc.trace.values + n_cols;
 
     let z_curr = composer.z_curr;
     let z_next = composer.z_next;
@@ -78,8 +76,8 @@ func compose_trace_columns{
         tempvar sum_curr = 0;
         tempvar sum_next = 0;
         <% for (var i=0; i<33; i++) { %>
-        tempvar sum_curr = sum_curr + ([row_ptr + <%= i %>] - ood_main_frame.current[<%= i %>]) * cc_trace_curr[<%= i %>];
-        tempvar sum_next = sum_next + ([row_ptr + <%= i %>] - ood_main_frame.next[<%= i %>]) * cc_trace_next[<%= i %>];
+        tempvar sum_curr = sum_curr + ([row_ptr + <%= i %>] - ood_main_frame.current[<%= i %>]) * composer.cc.trace[<%= i %>].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + <%= i %>] - ood_main_frame.next[<%= i %>]) * composer.cc.trace[<%= i %>].values[1];
         <% } %>
         tempvar x = [x_coord_ptr];
         tempvar sum = sum_curr / (x - z_curr) + sum_next / (x - z_next);
@@ -93,8 +91,6 @@ func compose_trace_columns{
     
     // Aux trace coefficient rows
     let n_cols = queried_aux_trace_states.n_cols;
-    let cc_trace_curr = cc_trace_next;
-    let cc_trace_next = cc_trace_next + n_cols;
 
     // Compose columns of the aux segments
     let row = queried_aux_trace_states.elements;
@@ -106,8 +102,8 @@ func compose_trace_columns{
         tempvar sum_curr = 0;
         tempvar sum_next = 0;
         <% for (var i=33; i<51; i++) { %>
-        tempvar sum_curr = sum_curr + ([row_ptr + <%= i %>] - ood_aux_frame.current[<%= i %>]) * cc_trace_curr[<%= i %>];
-        tempvar sum_next = sum_next + ([row_ptr + <%= i %>] - ood_aux_frame.next[<%= i %>]) * cc_trace_next[<%= i %>];
+        tempvar sum_curr = sum_curr + ([row_ptr + <%= i %>] - ood_aux_frame.current[<%= i %>]) * composer.cc.trace[<%= i %>].values[0];
+        tempvar sum_next = sum_next + ([row_ptr + <%= i %>] - ood_aux_frame.next[<%= i %>]) * composer.cc.trace[<%= i %>].values[1];
         <% } %>
         tempvar x = [x_coord_ptr];
         tempvar sum = sum_curr / (x - z_curr) + sum_next / (x - z_next);
@@ -139,7 +135,6 @@ func compose_constraint_evaluations{
 
     local n_cols = queried_evaluations.n_cols;
     local cc_constraint: felt* = composer.cc.constraints;
-    // let cc_trace_next = composer.cc.trace.values + n_cols;
 
     local row: felt* = queried_evaluations.elements;
     let (local result: felt*) = alloc();
@@ -151,8 +146,7 @@ func compose_constraint_evaluations{
     loop:
         tempvar sum = 0;
         <% for (var i=0; i<49; i++) { %>
-        tempvar sum = sum + (row[<%= i %>] - ood_evaluations.elements[<%= i %>]) * cc_constraint[<%= i %>];
-        <% } %>
+        tempvar sum = sum + (row[<%= i %>] - ood_evaluations.elements[<%= i %>]) * cc_constraint[<%= i % 4 %>]; <% } %>
         tempvar x = [x_coord_ptr];
         tempvar sum = sum / (x - z_m);
         assert [result_ptr] = sum;
