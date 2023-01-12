@@ -12,6 +12,9 @@ from utils.endianness import byteswap32
 
 from stark_verifier.crypto.random import PublicCoin
 from stark_verifier.air.air_instance import AirInstance, DeepCompositionCoefficients, get_deep_composition_coefficients, TraceCoefficients
+from stark_verifier.air.table import Table
+from stark_verifier.composer import compose_constraint_evaluations, DeepComposer
+from stark_verifier.utils import Vec
 
 @external
 func test_get_deep_composition_coefficients{
@@ -92,3 +95,45 @@ func test_get_deep_composition_coefficients{
 }
 
 
+
+@external
+func test_compose_constraint_evaluations{
+    range_check_ptr
+}() {
+    alloc_locals;
+
+    let (local composer_ptr: DeepComposer*) = alloc();
+    let (local queried_evaluations_ptr: Table*) = alloc();
+    let (local ood_evaluations_ptr: felt*) = alloc();
+    local ood_evaluations_len;
+
+    %{
+        from zerosync_hints import *
+        from src.stark_verifier.utils import write_into_memory
+        data = evaluation_data()
+        write_into_memory(ids.composer_ptr, data['composer'], segments)
+        write_into_memory(ids.queried_evaluations_ptr, data['queried_constraint_evaluations'], segments)
+        
+        evaluations = data['ood_constraint_evaluations'].split(', ')[1:]
+        i = 0
+        for elemB in evaluations:
+            memory[ids.ood_evaluations_ptr + i] = int(elemB, 16)
+            i += 1
+        
+        ids.ood_evaluations_len = len(evaluations)
+    %}
+
+    let ood_evaluations = Vec(n_elements=ood_evaluations_len, elements=ood_evaluations_ptr);
+
+    let result = compose_constraint_evaluations([composer_ptr], [queried_evaluations_ptr], ood_evaluations);
+
+    %{
+        expected = data['c_composition'].split(', ')[1:]
+        i = 0
+        for elemB in expected:
+            elemA = memory[ids.result + i] 
+            assert int(elemB, 16) == elemA, f'index {i}: {hex(elemA)} != {elemB}'
+            i += 1
+    %}
+    return ();
+}

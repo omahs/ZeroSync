@@ -145,8 +145,8 @@ func compose_constraint_evaluations{
     tempvar result_ptr = result;
     loop:
         tempvar sum = 0;
-        <% for (var i=0; i<49; i++) { %>
-        tempvar sum = sum + (row[<%= i %>] - ood_evaluations.elements[<%= i %>]) * cc_constraint[<%= i % 4 %>]; <% } %>
+        <% for (var i=0; i<4; i++) { %>
+        tempvar sum = sum + (row_ptr[<%= i %>] - ood_evaluations.elements[<%= i %>]) * cc_constraint[<%= i % 4 %>]; <% } %>
         tempvar x = [x_coord_ptr];
         tempvar sum = sum / (x - z_m);
         assert [result_ptr] = sum;
