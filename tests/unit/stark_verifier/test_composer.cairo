@@ -13,7 +13,7 @@ from utils.endianness import byteswap32
 from stark_verifier.crypto.random import PublicCoin
 from stark_verifier.air.air_instance import AirInstance, DeepCompositionCoefficients, get_deep_composition_coefficients, TraceCoefficients
 from stark_verifier.air.table import Table
-from stark_verifier.composer import compose_constraint_evaluations, DeepComposer
+from stark_verifier.composer import compose_constraint_evaluations, DeepComposer, combine_compositions
 from stark_verifier.utils import Vec
 
 @external
@@ -129,6 +129,52 @@ func test_compose_constraint_evaluations{
 
     %{
         expected = data['c_composition'].split(', ')[1:]
+        i = 0
+        for elemB in expected:
+            elemA = memory[ids.result + i] 
+            assert int(elemB, 16) == elemA, f'index {i}: {hex(elemA)} != {elemB}'
+            i += 1
+    %}
+    return ();
+}
+
+
+
+
+@external
+func test_combine_compositions{
+    range_check_ptr
+}() {
+    alloc_locals;
+
+    
+    let (local c_composition: felt*) = alloc();
+    let (local t_composition: felt*) = alloc();
+    let (local composer_ptr: DeepComposer*) = alloc();
+
+    %{
+        from zerosync_hints import *
+        from src.stark_verifier.utils import write_into_memory
+        data = evaluation_data()
+        write_into_memory(ids.composer_ptr, data['composer'], segments)
+
+        c_composition = data['c_composition'].split(', ')[1:]
+        i = 0
+        for elemB in c_composition:
+            memory[ids.c_composition + i] = int(elemB, 16)
+            i += 1
+
+        t_composition = data['t_composition'].split(', ')[1:]
+        i = 0
+        for elemB in t_composition:
+            memory[ids.t_composition + i] = int(elemB, 16)
+            i += 1
+    %}
+
+    let result = combine_compositions([composer_ptr], t_composition, c_composition);
+
+    %{
+        expected = data['deep_evaluations'].split(', ')[1:]
         i = 0
         for elemB in expected:
             elemA = memory[ids.result + i] 

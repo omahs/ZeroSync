@@ -529,8 +529,8 @@ func combine_compositions(
 ) -> felt* {
     alloc_locals;
 
-    tempvar cc_degree_0 = composer.cc.degree[0];
-    tempvar cc_degree_1 = composer.cc.degree[1];
+    let cc_degree_0 = composer.cc.degree[0];
+    let cc_degree_1 = composer.cc.degree[1];
     
     let (local result: felt*) = alloc();
     // TODO: Don't hardcode number of queries

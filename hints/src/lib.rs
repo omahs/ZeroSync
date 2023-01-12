@@ -28,7 +28,7 @@ struct WinterVerifierError(VerifierError);
 
 impl From<WinterVerifierError> for PyErr {
     fn from(error: WinterVerifierError) -> Self {
-        PyValueError::new_err(print!("{}", error.0))
+        PyValueError::new_err(print!("{:?}", error.0))
     }
 }
 
@@ -347,16 +347,16 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
     )
     .map_err(VerifierError::FriVerificationFailed)?;
 
-    // // make sure the proof-of-work specified by the grinding factor is satisfied
-    // if public_coin.leading_zeros() < air.options().grinding_factor() {
-    //     return Err(VerifierError::QuerySeedProofOfWorkVerificationFailed);
-    // }
-
-
+    
     // 5 ----- trace and constraint queries -------------------------------------------------------
     // read proof-of-work nonce sent by the prover and update the public coin with it
     let pow_nonce = channel.read_pow_nonce();
     public_coin.reseed_with_int(pow_nonce);
+
+    // make sure the proof-of-work specified by the grinding factor is satisfied
+    if public_coin.leading_zeros() < air.options().grinding_factor() {
+        return Err(WinterVerifierError(VerifierError::QuerySeedProofOfWorkVerificationFailed));
+    }
 
 
     // draw pseudo-random query positions for the LDE domain from the public coin; in the
@@ -384,7 +384,7 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
     );
     let c_composition = composer
         .compose_constraint_evaluations(queried_constraint_evaluations.clone(), ood_constraint_evaluations.clone());
-    let deep_evaluations = composer.combine_compositions(t_composition, c_composition.clone());
+    let deep_evaluations = composer.combine_compositions(t_composition.clone(), c_composition.clone());
 
 
     // Evaluation data
@@ -475,6 +475,18 @@ fn evaluation_data<'a>() -> Result<HashMap<&'a str, String>, WinterVerifierError
     data.insert(
         "c_composition",
         c_composition
+        .iter()
+        .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string()),
+    );
+    data.insert(
+        "t_composition",
+        t_composition
+        .iter()
+        .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string()),
+    );
+    data.insert(
+        "deep_evaluations",
+        deep_evaluations
         .iter()
         .fold(String::new(), |a, x| a + ", " + &x.to_raw().to_string()),
     );
